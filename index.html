@@ -1055,54 +1055,62 @@ code{background:rgba(255,255,255,0.07);padding:1px 6px;border-radius:4px;font-fa
       <div class="tab-view" id="tab-incentive">
         <div class="fbox fb-blue mb16">
           <div class="fb-title">📌 시상 데이터 형식</div>
-          <div class="fb-desc">
-            엑셀/CSV: <code>원수사</code> · <code>보험상품키워드</code> · <code>시상율(%)</code> 컬럼<br>
-            키워드는 상품명에 포함된 단어 일부도 매칭됩니다 (예: "플러스" → KB건강보험플러스).
-          </div>
+          <div class="fb-expr">시상금 = 시상율(%) × 영수금액</div>
+          <div class="fb-desc"><b style="color:var(--gold)">필수 열:</b> 보험사 | 상품명(키워드) | 시상율(%) — 헤더 첫 행, 탭 구분</div>
         </div>
         <div class="row">
-          <div class="col">
+          <div class="col2">
             <div class="card mb16">
-              <div class="sec-hd"><h3>시상 데이터 등록</h3></div>
-              <div class="mb16">
-                <label style="font-size:11px;color:var(--t2);display:block;margin-bottom:6px">데이터 이름</label>
-                <input type="text" id="inc-name" placeholder="예) 2024년 5월 시상">
+               <div class="sec-hd">
+                 <h3>시상 데이터 입력</h3>
+                 <!-- 탭 버튼 추가 -->
+                 <div style="display:flex; gap:4px;">
+                   <button class="btn btn-sm btn-teal" id="tab-text-btn" onclick="switchInputMode('text')" style="border-radius:4px 0 0 4px;">텍스트</button>
+                   <button class="btn btn-sm btn-outline" id="tab-image-btn" onclick="switchInputMode('image')" style="border-radius:0 4px 4px 0; border-left:none;">시책이미지</button>
+                 </div>
+             </div>
+
+            <!-- [방법 1] 텍스트 입력 영역 -->
+            <div id="input-text-container">
+              <textarea class="paste-area" id="paste-area"
+                placeholder="Excel 데이터를 붙여넣거나, 공문 텍스트를 자유롭게 입력하세요..."></textarea>
+            </div>
+
+            <!-- [방법 2] 이미지 업로드 영역 (기본 숨김) -->
+            <div id="input-image-container" style="display:none;">
+              <div onclick="document.getElementById('file-input').click()" 
+                  style="border: 2px dashed var(--border); border-radius: 8px; padding: 45px 20px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.02);">
+              <p style="margin:0; color:var(--teal); font-weight:bold;">📸 시책 캡처 이미지를 여기에 클릭하여 업로드</p>
+              <p style="margin:8px 0 0 0; font-size:0.8rem; color:#8899af;">이미지 속 상품명과 시상률을 AI가 분석합니다</p>
+              <input type="file" id="file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(this.files)">
               </div>
-              <div class="tab-container">
-                <button id="tab-text-btn" class="tab-btn active" onclick="switchIncInputMode('text')">텍스트 붙여넣기</button>
-                <button id="tab-file-btn" class="tab-btn" onclick="switchIncInputMode('file')">파일 업로드</button>
-              </div>
-              <div id="inc-text-container">
-                <div style="font-size:11px;color:var(--t2);margin-bottom:8px">원수사 TAB 보험상품키워드 TAB 시상율(%) 형식으로 붙여넣기</div>
-                <textarea class="paste-area" id="inc-paste" placeholder="예)&#10;삼성생명	종신	8.5&#10;KB라이프생명	건강	6.2&#10;한화생명		5.5"></textarea>
-              </div>
-              <div id="inc-file-container" style="display:none">
-                <div class="upload-zone">
-                  <input type="file" id="inc-file" accept=".xlsx,.xls,.csv" onchange="onIncFileUpload(event)">
-                  <div class="u-ico">📂</div>
-                  <div class="u-hint">원수사 · 키워드 · 시상율(%) 컬럼</div>
-                  <div class="u-status" id="inc-file-status">.xlsx / .xls / .csv</div>
+             </div>
+
+            <div class="row mt16">
+               <div class="col"><input type="text" id="inc-name" placeholder="시상 이름 (예: 2026-04 KB 시상)"></div>
+               <div><button class="btn btn-teal" onclick="parseInc()">미리보기</button></div>
+            </div>
+         </div>
+
+            <div class="card" id="inc-preview" style="display:none">
+              <div class="sec-hd"><h3>파싱 미리보기</h3>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-gold btn-sm" onclick="saveInc()">저장</button>
+                  <button class="btn btn-outline btn-sm" onclick="document.getElementById('inc-preview').style.display='none'">닫기</button>
                 </div>
               </div>
-              <button class="btn btn-gold mt16" style="width:100%" onclick="addIncSet()">+ 시상 데이터 추가</button>
-              <div id="inc-preview" style="display:none;margin-top:14px">
-                <div style="font-size:11px;color:var(--t2);margin-bottom:8px">미리보기</div>
-                <div class="table-wrap" style="max-height:200px;overflow-y:auto">
-                  <table><thead><tr><th>원수사</th><th>키워드</th><th>시상율(%)</th></tr></thead>
-                  <tbody id="inc-preview-tbody"></tbody></table>
-                </div>
-              </div>
+              <div class="table-wrap"><table id="inc-preview-tbl"><thead></thead><tbody></tbody></table></div>
             </div>
           </div>
           <div class="col">
             <div class="card">
-              <div class="sec-hd"><h3>등록된 시상 데이터</h3><span id="inc-count" class="tag tag-teal">0건</span></div>
+              <div class="sec-hd"><h3>등록된 시상 목록</h3><span class="tag tag-teal" id="inc-cnt-badge">0건</span></div>
               <div id="inc-list"><div class="empty"><div class="e-ico">📋</div><p>등록된 시상 데이터가 없습니다</p></div></div>
             </div>
           </div>
         </div>
       </div>
-
+      
       <!-- ══ 계산 이력 ══ -->
       <div class="tab-view" id="tab-history">
         <div class="sec-hd mb16"><h3>계산 이력 조회</h3><button class="btn btn-outline btn-sm" onclick="clearHistory()">이력 삭제</button></div>
